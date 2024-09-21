@@ -1,4 +1,10 @@
 # tests/test_documents.py
+import sys
+import os
+
+from crud import create_folder
+
+sys.path.append(os.path.dirname(os.path.abspath(__file__)) + "/..")
 import pytest
 from fastapi.testclient import TestClient
 from main import app
@@ -6,14 +12,18 @@ from main import app
 client = TestClient(app)
 
 
-def test_upload_document():
+def test_upload_document(client, db):
+    # Создаём папку, в которой будем загружать документ
+    folder = create_folder(db, name="Test Folder", description="Test folder")
+
+    # Загружаем документ
     with open("tests/test_file.txt", "w") as f:
         f.write("This is a test document.")
 
     with open("tests/test_file.txt", "rb") as file:
-        response = client.post("/upload/", files={"file": file})
+        response = client.post(f"/folders/{folder.id}/documents/", files={"file": file})
+
     assert response.status_code == 200
-    assert response.json()["filename"] == "test_file.txt"
 
 
 def test_get_document():

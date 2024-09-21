@@ -3,10 +3,11 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from datetime import timedelta
 from main import app
-from security import verify_password, get_password_hash, create_access_token
+from security import verify_password, get_password_hash, create_access_token, ACCESS_TOKEN_EXPIRE_MINUTES, SECRET_KEY, \
+    ALGORITHM
 from jose import JWTError, jwt
 from fastapi import Depends
-from models import User
+from models import User, Folder
 from sqlalchemy.orm import Session
 from database import get_db
 

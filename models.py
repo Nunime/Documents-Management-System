@@ -62,8 +62,8 @@ class Document(Base):
     folder = relationship("Folder", back_populates="documents")
 
     # Временные метки
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.now)
+    updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.utcnow)
 
 
 # Модель прав доступа (AccessRight)

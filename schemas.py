@@ -19,7 +19,7 @@ class DocumentResponse(DocumentBase):
     updated_at: datetime
 
     class Config:
-        orm_mode = True  # Позволяет Pydantic работать с SQLAlchemy моделями
+        from_attributes = True  # Позволяет Pydantic работать с SQLAlchemy моделями
 
 
 # Базовая схема для папки (Folder)
@@ -40,13 +40,14 @@ class FolderResponse(FolderBase):
     documents: List[DocumentResponse] = []  # Список документов в папке
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 # Схемы для прав доступа (Access Rights)
 class AccessRightBase(BaseModel):
     user_id: int
-    access_level: str = Field(..., regex="^(read|write)$")  # Доступен только "read" или "write"
+    access_level: str = Field(..., pattern="^(read|write)$")
+  # Доступен только "read" или "write"
 
 class AccessRightCreate(AccessRightBase):
     pass  # Эта схема используется для создания новых прав
@@ -55,7 +56,7 @@ class AccessRightResponse(AccessRightBase):
     folder_id: int
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 # Схемы для пользователей (User)
@@ -70,4 +71,4 @@ class UserResponse(UserBase):
     id: int
 
     class Config:
-        orm_mode = True
+        from_attributes = True

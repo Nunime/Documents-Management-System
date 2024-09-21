@@ -1,4 +1,7 @@
 # tests/test_folders.py
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.abspath(__file__)) + "/..")
 import pytest
 from fastapi.testclient import TestClient
 from main import app
@@ -16,11 +19,22 @@ def create_test_folder(db: Session):
     db.refresh(folder)
     return folder
 
-def test_create_folder():
-    response = client.post("/folders/", json={"name": "New Folder", "description": "A test folder"})
+# tests/test_folders.py
+from schemas import FolderCreate  # Импортируем Pydantic-схему FolderCreate
+
+def test_create_folder(client, db):
+    folder_data = FolderCreate(name="Test Folder", description="Test folder", parent_folder_id=None)  # Создаём объект Pydantic-схемы
+    creator = "test_user"  # Указываем пользователя, который создаёт папку
+
+    response = client.post(
+        "/folders/",
+        json=folder_data.dict(),  # Преобразуем объект Pydantic в словарь
+        headers={"X-Creator": creator}  # Передаём имя создателя через заголовки (или используйте другой способ передачи)
+    )
+
     assert response.status_code == 200
-    data = response.json()
-    assert data["name"] == "New Folder"
+    assert response.json()["name"] == "Test Folder"
+
 
 def test_get_folder(create_test_folder):
     folder = create_test_folder

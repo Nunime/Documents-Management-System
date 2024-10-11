@@ -1,54 +1,38 @@
 # tests/test_folders.py
-import sys
-import os
-sys.path.append(os.path.dirname(os.path.abspath(__file__)) + "/..")
 import pytest
 from fastapi.testclient import TestClient
-from main import app
 from sqlalchemy.orm import Session
-from database import get_db
+
+from main import app
 from models import Folder
+from crud import create_folder
 
 client = TestClient(app)
 
 @pytest.fixture
-def create_test_folder(db: Session):
-    folder = Folder(name="Test Folder", creator="test_user", last_modifier="test_user")
-    db.add(folder)
-    db.commit()
-    db.refresh(folder)
+def create_test_folder(db: Session, create_test_user):
+    folder_data = {"name": "Test Folder"}
+    folder = create_folder(db, folder_data, create_test_user.id)
     return folder
 
-# tests/test_folders.py
-from schemas import FolderCreate  # Импортируем Pydantic-схему FolderCreate
 
 def test_create_folder(client, db):
-    folder_data = FolderCreate(name="Test Folder", description="Test folder", parent_folder_id=None)  # Создаём объект Pydantic-схемы
-    creator = "test_user"  # Указываем пользователя, который создаёт папку
-
-    response = client.post(
-        "/folders/",
-        json=folder_data.dict(),  # Преобразуем объект Pydantic в словарь
-        headers={"X-Creator": creator}  # Передаём имя создателя через заголовки (или используйте другой способ передачи)
-    )
-
-    assert response.status_code == 200
-    assert response.json()["name"] == "Test Folder"
-
+    response = client.post("/folders/", json={"name": "Test Folder"})  # Создание папки
+    assert response.status_code == 200  # Убедитесь, что папка была создана
+    data = response.json()
+    assert data["name"] == "Test Folder"  # Проверка корректности данных
 
 def test_get_folder(create_test_folder):
     folder = create_test_folder
     response = client.get(f"/folders/{folder.id}")
     assert response.status_code == 200
-    data = response.json()
-    assert data["name"] == folder.name
+    assert response.json()["name"] == folder.name
 
 def test_update_folder(create_test_folder):
     folder = create_test_folder
     response = client.put(f"/folders/{folder.id}", json={"name": "Updated Folder", "description": "Updated description"})
     assert response.status_code == 200
-    data = response.json()
-    assert data["name"] == "Updated Folder"
+    assert response.json()["name"] == "Updated Folder"
 
 def test_delete_folder(create_test_folder):
     folder = create_test_folder

@@ -1,82 +1,60 @@
-from sqlalchemy import Column, Integer, String, Text, ForeignKey, DateTime
+from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Enum
 from sqlalchemy.orm import relationship
 from database import Base
-from datetime import datetime
+import enum
 
 
-# Модель пользователя (User)
+class AccessLevel(enum.Enum):
+    read = "read"
+    write = "write"
+
+
 class User(Base):
     __tablename__ = "users"
 
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String, unique=True, index=True)
-    email = Column(String, unique=True, index=True)
     hashed_password = Column(String)
-    is_active = Column(Integer, default=True)
-
-    # Отношения с правами доступа
-    access_rights = relationship("AccessRight", back_populates="user")
-
-    # Временные метки
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    email = Column(String, unique=True, index=True)
 
 
-# Модель папки (Folder)
 class Folder(Base):
     __tablename__ = "folders"
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, index=True)
-    description = Column(Text, nullable=True)
-    creator = Column(String)  # Можно заменить на ForeignKey к User, если нужно отслеживать пользователя
-    last_modifier = Column(String)
+    created_by = Column(Integer, ForeignKey("users.id"))  # Добавляем столбец created_by
+    created_at = Column(String)
+    access_level = Column(String)
 
-    parent_folder_id = Column(Integer, ForeignKey('folders.id'), nullable=True)  # Родительская папка
-    parent_folder = relationship("Folder", remote_side=[id], back_populates="sub_folders")
-    sub_folders = relationship("Folder", back_populates="parent_folder", cascade="all, delete-orphan")
-
-    # Отношения с документами
-    documents = relationship("Document", back_populates="folder", cascade="all, delete-orphan")
-
-    # Временные метки
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-
-    # Права доступа
-    access_rights = relationship("AccessRight", back_populates="folder")
+    user = relationship("User", back_populates="folders")
 
 
-# Модель документа (Document)
 class Document(Base):
     __tablename__ = "documents"
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, index=True)
-    description = Column(Text, nullable=True)
-    file_path = Column(String)  # Путь к файлу в файловой системе
-    creator = Column(String)  # Можно заменить на ForeignKey к User
-    last_modifier = Column(String)
+    folder_id = Column(Integer, ForeignKey("folders.id"))
+    created_by = Column(Integer, ForeignKey("users.id"))
+    created_at = Column(DateTime)
 
-    folder_id = Column(Integer, ForeignKey('folders.id'))
-    folder = relationship("Folder", back_populates="documents")
-
-    # Временные метки
-    created_at = Column(DateTime, default=datetime.now)
-    updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.utcnow)
+    access_level = Column(Enum(AccessLevel), default=AccessLevel.read)
+    allowed_users = relationship("User", secondary="document_access")
 
 
-# Модель прав доступа (AccessRight)
-class AccessRight(Base):
-    __tablename__ = "access_rights"
+# Ассоциативные таблицы для прав доступа
+class FolderAccess(Base):
+    __tablename__ = "folder_access"
 
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey('users.id'))
-    folder_id = Column(Integer, ForeignKey('folders.id'))
-    access_level = Column(String)  # 'read' или 'write'
+    user_id = Column(Integer, ForeignKey("users.id"), primary_key=True)
+    folder_id = Column(Integer, ForeignKey("folders.id"), primary_key=True)
+    access_level = Column(Enum(AccessLevel), default=AccessLevel.read)
 
-    user = relationship("User", back_populates="access_rights")
-    folder = relationship("Folder", back_populates="access_rights")
 
-# Если нужны миграции базы данных с Alembic, не забудьте зарегистрировать все модели:
-# Base.metadata.create_all(bind=engine) в database.py
+class DocumentAccess(Base):
+    __tablename__ = "document_access"
+
+    user_id = Column(Integer, ForeignKey("users.id"), primary_key=True)
+    document_id = Column(Integer, ForeignKey("documents.id"), primary_key=True)
+    access_level = Column(Enum(AccessLevel), default=AccessLevel.read)

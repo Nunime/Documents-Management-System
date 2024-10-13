@@ -1,8 +1,12 @@
 # tests/test_access_rights.py
+import random
+from datetime import datetime, timezone
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
+from auth import get_password_hash
 from main import app
 from models import User, FolderAccess
 from database import get_db
@@ -12,11 +16,12 @@ client = TestClient(app)
 
 @pytest.fixture
 def create_test_user(db: Session):
-    user = User(username="test_user", email="test_user@example.com", hashed_password="password")
+    hashed_password = get_password_hash("unique_password")
+    user = User(username="testuser_" + str(datetime.now(timezone.utc)()), email="uniqueuser@example.com", hashed_password=hashed_password)
     db.add(user)
     db.commit()
-    db.refresh(user)
     return user
+
 
 @pytest.fixture
 def create_test_folder(db: Session, create_test_user):

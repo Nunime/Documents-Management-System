@@ -1,4 +1,6 @@
 # tests/test_auth.py
+from datetime import datetime, timezone
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
@@ -12,12 +14,12 @@ client = TestClient(app)
 
 @pytest.fixture
 def create_test_user(db: Session):
-    hashed_password = get_password_hash("password")
-    user = User(username="testuser", email="testuser@example.com", hashed_password=hashed_password)
+    hashed_password = get_password_hash("unique_password")
+    user = User(username="testuser_" + str(datetime.now(timezone.utc)()), email="uniqueuser@example.com", hashed_password=hashed_password)
     db.add(user)
     db.commit()
-    db.refresh(user)
     return user
+
 
 def test_login(client, db, create_test_user):
     # Создание пользователя, если он еще не был создан

@@ -6,8 +6,9 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)) + "/..")
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
 from fastapi.testclient import TestClient
-from database import Base, get_db
+from database import get_db
 from main import app
+from models import Folder, Base
 
 # Настраиваем тестовую базу данных SQLite
 SQLALCHEMY_DATABASE_URL = "sqlite:///./test.db"
@@ -66,4 +67,19 @@ def create_test_user(db: Session):
     db.commit()
     db.refresh(user)
     return user
+
+@pytest.fixture(autouse=True)
+def clean_db(db: Session):
+    # Очистка базы данных перед каждым тестом
+    meta = Base.metadata
+    for table in reversed(meta.sorted_tables):
+        db.execute(table.delete())
+    db.commit()
+
+@pytest.fixture
+def create_test_folder(db: Session, create_test_user):
+    folder = Folder(name="Test Folder", created_by=create_test_user.id)
+    db.add(folder)
+    db.commit()
+    return folder
 

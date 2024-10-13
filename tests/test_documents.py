@@ -1,5 +1,4 @@
 # tests/test_documents.py
-import pytest
 from fastapi.testclient import TestClient
 from crud import create_folder
 from main import app

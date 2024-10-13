@@ -8,7 +8,11 @@ from sqlalchemy.orm import sessionmaker, Session
 from fastapi.testclient import TestClient
 from database import get_db
 from main import app
-from models import Folder, Base
+from models import Folder, Base, User
+from auth import get_password_hash
+from datetime import datetime, timezone
+
+
 
 # Настраиваем тестовую базу данных SQLite
 SQLALCHEMY_DATABASE_URL = "sqlite:///./test.db"
@@ -52,20 +56,15 @@ def client():
 
 @pytest.fixture
 def create_test_user(db: Session):
-    from models import User
-    from security import get_password_hash
-
-    # Удаляем пользователя с таким именем, если он уже существует
-    existing_user = db.query(User).filter(User.username == "testuser").first()
-    if existing_user:
-        db.delete(existing_user)
-        db.commit()
-
-    hashed_password = get_password_hash("password")
-    user = User(username="testuser", email="testuser@example.com", hashed_password=hashed_password)
+    hashed_password = get_password_hash("unique_password")
+    user = User(
+        username="testuser_" + str(datetime.now(timezone.utc)),
+        email="uniqueuser@example.com",
+        hashed_password=hashed_password
+    )
     db.add(user)
     db.commit()
-    db.refresh(user)
+    db.refresh(user)  # обновление объекта, чтобы получить его ID
     return user
 
 @pytest.fixture(autouse=True)
@@ -78,8 +77,14 @@ def clean_db(db: Session):
 
 @pytest.fixture
 def create_test_folder(db: Session, create_test_user):
-    folder = Folder(name="Test Folder", created_by=create_test_user.id)
+    folder = Folder(
+        name="Test Folder",
+        created_by=create_test_user.id,  # Передаем ID созданного пользователя
+        created_at=datetime.now(timezone.utc),
+        access_level=1  # Указываем корректное значение для access_level
+    )
     db.add(folder)
     db.commit()
+    db.refresh(folder)  # Обновляем объект, чтобы получить его ID и другие данные
     return folder
 

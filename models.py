@@ -30,7 +30,7 @@ class Folder(Base):
     name = Column(String, nullable=False)
     created_by = Column(Integer, ForeignKey('users.id'))
     created_at = Column(DateTime, default=datetime.now(timezone.utc))
-    access_level = Column(String, nullable=False)
+    access_level = Column(Integer, nullable=False, default=0)
 
     # Связь с пользователем, создавшим папку
     creator = relationship("User", back_populates="folders")
@@ -57,7 +57,7 @@ class FolderAccess(Base):
 
     user_id = Column(Integer, ForeignKey("users.id"), primary_key=True)
     folder_id = Column(Integer, ForeignKey("folders.id"), primary_key=True)
-    access_level = Column(Enum(AccessLevel), default=AccessLevel.read)
+    access_level = Column(Integer, nullable=False, default=0)
 
 
 class DocumentAccess(Base):
@@ -65,4 +65,4 @@ class DocumentAccess(Base):
 
     user_id = Column(Integer, ForeignKey("users.id"), primary_key=True)
     document_id = Column(Integer, ForeignKey("documents.id"), primary_key=True)
-    access_level = Column(Enum(AccessLevel), default=AccessLevel.read)
+    access_level = Column(Integer, nullable=False, default=0)

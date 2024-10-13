@@ -1,26 +1,78 @@
-from pydantic import BaseModel
-from typing import Optional
+from pydantic import BaseModel, EmailStr, Field
 from datetime import datetime
+from typing import Optional, List
 
 
-class UserCreate(BaseModel):
+# Схема для пользователя (User)
+class UserBase(BaseModel):
     username: str
+    email: EmailStr
+
+
+class UserCreate(UserBase):
     password: str
-    email: str
 
 
-class FolderCreate(BaseModel):
+class UserResponse(UserBase):
+    id: int
+    created_at: datetime
+
+    class Config:
+        orm_mode = True
+
+
+# Схема для папки (Folder)
+class FolderBase(BaseModel):
     name: str
-    created_at: Optional[datetime] = None
+    description: Optional[str] = None
+    access_level: Optional[str] = Field(None, description="Access level for folder")
 
 
-class DocumentCreate(BaseModel):
-    name: str
+class FolderCreate(FolderBase):
+    pass
+
+
+class FolderResponse(FolderBase):
+    id: int
+    created_at: datetime
+    created_by: int
+    documents: List["DocumentResponse"] = []  # связь с документами
+
+    class Config:
+        orm_mode = True
+
+
+# Схема для документа (Document)
+class DocumentBase(BaseModel):
+    title: str
+    content: Optional[str] = None
+    description: Optional[str] = None
+
+
+class DocumentCreate(DocumentBase):
+    pass
+
+
+class DocumentResponse(DocumentBase):
+    id: int
+    created_at: datetime
+    created_by: int
+    folder_id: int  # связь с папкой
+
+    class Config:
+        orm_mode = True
+
+
+# Схемы для прав доступа (Access Rights)
+class AccessRightsBase(BaseModel):
     folder_id: int
-    created_at: Optional[datetime] = None
+    user_id: int
+    can_read: bool = True
+    can_write: bool = False
 
-from pydantic import BaseModel
 
-class Token(BaseModel):
-    access_token: str
-    token_type: str
+class AccessRightsResponse(AccessRightsBase):
+    id: int
+
+    class Config:
+        orm_mode = True
